@@ -26,33 +26,28 @@ bot.command('cek', (ctx) => {
   ctx.reply('🟢 Bot aktif dan berjalan normal.');
 });
 
-bot.command("harga", async (ctx) => {
-  const input = ctx.message.text.split(" ");
-  const kode = input[1]?.toUpperCase();
+bot.onText(/\/harga (.+)/, async (msg, match) => {
+  const chatId = msg.chat.id;
+  const symbol = match[1];
 
-  if (!kode) {
-    return ctx.reply("⚠ Format salah.\nGunakan: `/harga BBCA`", { parse_mode: "Markdown" });
+  const stockData = await getStockData(symbol);
+
+  if (!stockData) {
+    return bot.sendMessage(chatId, `❌ Data untuk ${symbol} tidak ditemukan.`);
   }
 
-  const data = await getHargaSaham(kode);
+  const responseMessage = `
+📊 *${stockData.company.name} (${stockData.symbol})*
+🏁 Close: *${stockData.close}*
+📈 High: ${stockData.high}
+📉 Low: ${stockData.low}
+📬 Volume: ${stockData.volume.toLocaleString()}
+⏱ Update: ${moment().tz("Asia/Jakarta").format("DD/MM HH:mm")}
+  `;
 
-  if (!data) {
-    return ctx.reply(`❌ Data untuk *${kode}* tidak ditemukan atau API error.`, { parse_mode: "Markdown" });
-  }
-
-  await ctx.reply(
-    `📊 *Harga Saham ${kode}*\n\n` +
-    `💰 Last Price: *${data.last_price}*\n` +
-    `📈 High: ${data.high}\n` +
-    `📉 Low: ${data.low}\n` +
-    `📊 Open: ${data.open}\n` +
-    `🔁 Change: *${data.change_pct}%*\n` +
-    `🧮 Volume: ${data.volume}\n` +
-    `💵 Value: ${data.value}\n` +
-    `\n🕒 Update: ${new Date().toLocaleString("id-ID")}`,
-    { parse_mode: "Markdown" }
-  );
+  bot.sendMessage(chatId, responseMessage, { parse_mode: "Markdown" });
 });
+
 
 
 // Webhook Handler
