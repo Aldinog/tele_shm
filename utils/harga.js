@@ -1,4 +1,4 @@
-import axios from "axios";
+require(axios);
 
 export async function getHargaSaham(kode) {
   try {
