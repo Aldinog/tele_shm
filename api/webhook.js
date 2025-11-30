@@ -1,6 +1,7 @@
 const { Telegraf } = require('telegraf');
+const moment = require('moment-timezone');
 const { isAllowedGroup } = require('../utils/groupControl');
-const { getHargaSaham } = require('../utils/harga.js');
+const { getStockData } = require('../utils/harga.js'); // pastikan sudah diperbarui
 
 // Inisialisasi bot
 const bot = new Telegraf(process.env.TELEGRAM_BOT_TOKEN);
@@ -9,7 +10,6 @@ const bot = new Telegraf(process.env.TELEGRAM_BOT_TOKEN);
 bot.use((ctx, next) => {
   const chatId = ctx.chat.id;
 
-  // Hanya respon jika dari grup yang diizinkan
   if (!isAllowedGroup(chatId)) {
     console.log(`❌ Pesan dari grup tidak diizinkan: ${chatId}`);
     return ctx.reply('🚫 Grup ini tidak diizinkan menggunakan bot ini.');
@@ -20,38 +20,44 @@ bot.use((ctx, next) => {
 
 // Command dasar
 bot.start((ctx) => ctx.reply('🤖 Bot aktif'));
-bot.help((ctx) => ctx.reply('📌 List command: /start /help /cek /news <EMITEN>'));
+bot.help((ctx) => ctx.reply('📌 List command: /start /help /cek /harga <EMITEN>'));
 
 bot.command('cek', (ctx) => {
   ctx.reply('🟢 Bot aktif dan berjalan normal.');
 });
 
+// Command harga saham
 bot.command("harga", async (ctx) => {
   const input = ctx.message.text.split(" ");
   const kode = input[1]?.toUpperCase();
 
   if (!kode) {
-    return ctx.reply("⚠ Format salah.\nGunakan: `/harga BBCA`", { parse_mode: "Markdown" });
+    return ctx.reply("⚠ Format salah.\nGunakan: `/harga WIFI`", { parse_mode: "Markdown" });
   }
 
-  const stockData = await getStockData(symbol);
+  try {
+    const stockData = await getStockData(kode);
 
-  if (!stockData) {
-    return bot.sendMessage(chatId, `❌ Data untuk ${symbol} tidak ditemukan.`);
-  }
+    if (!stockData || !stockData.company) {
+      return ctx.reply(`❌ Data untuk *${kode}* tidak ditemukan atau API bermasalah.`, { parse_mode: "Markdown" });
+    }
 
-  const responseMessage = `
+    const msg = `
 📊 *${stockData.company.name} (${stockData.symbol})*
-🏁 Close: *${stockData.close}*
+💰 Close: *${stockData.close}*
 📈 High: ${stockData.high}
 📉 Low: ${stockData.low}
 📬 Volume: ${stockData.volume.toLocaleString()}
 ⏱ Update: ${moment().tz("Asia/Jakarta").format("DD/MM HH:mm")}
-  `;
+    `.trim();
 
-  bot.sendMessage(chatId, responseMessage, { parse_mode: "Markdown" });
+    return ctx.reply(msg, { parse_mode: "Markdown" });
+
+  } catch (err) {
+    console.error("Error saat mengambil harga saham:", err);
+    return ctx.reply(`❌ Terjadi kesalahan saat mengambil data untuk *${kode}*.`);
+  }
 });
-
 
 // Webhook Handler
 module.exports = async (req, res) => {
@@ -68,6 +74,7 @@ module.exports = async (req, res) => {
   }
 };
 
+// Command lain (jika diperlukan)
 bot.command('getid', async (ctx) => {
   const chatId = ctx.chat.id;
   const chatType = ctx.chat.type;
@@ -77,4 +84,3 @@ bot.command('getid', async (ctx) => {
     { parse_mode: 'Markdown' }
   );
 });
-

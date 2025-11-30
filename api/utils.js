@@ -2,11 +2,16 @@ const axios = require('axios');
 const fs = require('fs');
 const moment = require('moment-timezone');
 
+const GOAPI_URL = 'https://api.goapi.io/stock/idx/prices';
+
+/**
+ * Mengambil data saham berdasarkan kode (symbol)
+ */
 const getStockData = async (symbol) => {
   try {
-    const response = await axios.get("https://api.goapi.io/stock/idx/prices", {
+    const response = await axios.get(GOAPI_URL, {
       params: {
-        symbols: symbol.toUpperCase(),
+        symbols: symbol.toUpperCase(), // WAJIB pakai "symbols"
         api_key: process.env.GOAPI_API_KEY
       }
     });
@@ -18,19 +23,47 @@ const getStockData = async (symbol) => {
   }
 };
 
+/**
+ * Format teks harga saham
+ */
+const fetchHarga = async (emiten) => {
+  try {
+    const data = await getStockData(emiten);
+    if (!data) return `❌ Data untuk ${emiten.toUpperCase()} tidak ditemukan.`;
 
+    const updateTime = moment().tz("Asia/Jakarta").format("DD/MM HH:mm");
+
+    return `📊 *${data.company.name} (${data.symbol})*
+💰 *Close:* ${data.close}
+📈 High: ${data.high}
+📉 Low: ${data.low}
+🔁 Change: *${data.change} (${data.change_pct.toFixed(2)}%)*  
+📊 Volume: ${data.volume.toLocaleString()}
+🕒 Update: ${updateTime}`;
+  } catch (err) {
+    console.error("API Error:", err.response?.data || err.message);
+    return `❌ Gagal ambil data untuk ${emiten.toUpperCase()}.`;
+  }
+};
+
+/**
+ * Kirim pesan Telegram via HTTP API
+ */
 const sendTelegramMessage = async (chatId, text) => {
   try {
     await axios.post(`https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
       chat_id: chatId,
       text,
-      parse_mode: "HTML"
+      parse_mode: "Markdown"
     });
   } catch (error) {
     console.error("Error send message:", error?.response?.data || error.message);
   }
 };
 
+/**
+ * Membaca file JSON
+ */
 const readJSON = (filepath) => {
   try {
     return JSON.parse(fs.readFileSync(filepath, "utf-8"));
@@ -39,51 +72,18 @@ const readJSON = (filepath) => {
   }
 };
 
+/**
+ * Menulis file JSON
+ */
 const writeJSON = (filepath, data) => {
   fs.writeFileSync(filepath, JSON.stringify(data, null, 2));
 };
 
-const GOAPI_URL = 'https://api.goapi.io/stock/idx/prices';
-
-const fetchHarga = async (emiten) => {
-  try {
-    const res = await axios.get(GOAPI_URL, {
-      params: {
-        symbols: emiten.toUpperCase(), // WAJIB pakai "symbols", bukan "simbol"
-        api_key: process.env.GOAPI_API_KEY
-      }
-    });
-
-    const d = res.data?.data?.results?.[0];
-    if (!d) return `❌ Data untuk ${emiten} tidak ditemukan.`;
-
-    return `📊 *${d.company.name} (${d.symbol})*
-💰 Close: *${d.close}*
-📈 High: ${d.high}
-📉 Low: ${d.low}
-📊 Volume: ${d.volume.toLocaleString()}
-📬 Change: ${d.change} (${d.change_pct.toFixed(2)}%)
-🕒 Update: ${moment().tz("Asia/Jakarta").format("DD/MM HH:mm")}`;
-  } catch (err) {
-    console.error("API Error:", err.response?.data || err.message);
-    return `❌ Gagal ambil data untuk ${emiten}.`;
-  }
-};
-
-
-const sendMessage = async (chatId, text) => {
-  await axios.post(`https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
-    chat_id: chatId,
-    text,
-    parse_mode: "Markdown"
-  });
-};
-
+// Export semua fungsi
 module.exports = {
   getStockData,
+  fetchHarga,
   sendTelegramMessage,
   readJSON,
-  writeJSON,
-  fetchHarga,
-  sendMessage
+  writeJSON
 };
