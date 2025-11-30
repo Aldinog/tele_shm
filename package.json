@@ -1,6 +1,7 @@
 {
   "name": "tele-shm",
   "version": "1.0.0",
+  "type": "module",
   "dependencies": {
     "axios": "^1.13.2",
     "body-parser": "^2.2.1",
