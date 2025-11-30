@@ -1,44 +1,12 @@
-const express = require("express");
-const TelegramBot = require("node-telegram-bot-api");
-require("dotenv").config();
+import TelegramBot from "node-telegram-bot-api";
 
-// ====== CONFIG ======
-const token = process.env.BOT_TOKEN; // Wajib dari Vercel .env
-const url = process.env.VERCEL_URL || "https://tele-shm.vercel.app"; // Custom sesuai domain deploy
-const port = process.env.PORT || 3000;
+const token = process.env.BOT_TOKEN;
+const bot = new TelegramBot(token, { webHook: true });
 
-// Cek token
-if (!token) {
-  console.error("❌ ERROR: BOT_TOKEN belum diset di environment variables!");
-  process.exit(1);
-}
+// Set Webhook ke Vercel
+bot.setWebHook(`${process.env.VERCEL_URL}/api/webhook`);
 
-const bot = new TelegramBot(token, {
-  webHook: {
-    port: port,
-  },
-});
-
-// Set Webhook endpoint ke Vercel
-const webhookUrl = `${url}/bot${token}`;
-bot.setWebHook(webhookUrl);
-
-// Express
-const app = express();
-app.use(express.json());
-
-// Endpoint Webhook Telegram
-app.post(`/bot${token}`, (req, res) => {
-  bot.processUpdate(req.body);
-  res.sendStatus(200);
-});
-
-// Test endpoint
-app.get("/", (req, res) => {
-  res.send("🚀 Telegram bot is running using Webhook.");
-});
-
-// ====== BOT LOGIC ======
+// Listener pesan masuk
 bot.on("message", async (msg) => {
   const chatId = msg.chat.id;
   const text = msg.text || "";
@@ -46,16 +14,18 @@ bot.on("message", async (msg) => {
   console.log(`📩 Message from ${chatId}: ${text}`);
 
   if (text === "/start") {
-    bot.sendMessage(chatId, "🤖 Bot aktif dan siap digunakan!\n\nSilakan kirim perintah.");
-    return;
+    await bot.sendMessage(chatId, "🤖 Bot aktif dan siap digunakan!\n\nSilakan kirim perintah.");
+  } else {
+    await bot.sendMessage(chatId, "Bot menerima pesan kamu, fitur lanjut sedang dikembangkan ✨");
   }
-
-  // Simple reply
-  bot.sendMessage(chatId, "Bot menerima pesan kamu, fitur lanjut sedang dikembangkan ✨");
 });
 
-// ====== START SERVER ======
-app.listen(port, () => {
-  console.log(`🚀 Bot is running on port ${port}`);
-  console.log(`📡 Webhook set to: ${webhookUrl}`);
-});
+// Handler Serverless (WAJIB untuk Vercel)
+export default function handler(req, res) {
+  if (req.method === "POST") {
+    bot.processUpdate(req.body);
+    res.status(200).send("OK");
+  } else {
+    res.status(200).send("🚀 Bot webhook aktif!");
+  }
+}
