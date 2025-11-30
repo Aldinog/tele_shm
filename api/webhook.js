@@ -1,5 +1,5 @@
 const { Telegraf } = require('telegraf');
-const { isAllowedGroup } = require(' ./utils/groupControl');
+const { isAllowedGroup } = require('../utils/groupControl');
 
 // Inisialisasi bot
 const bot = new Telegraf(process.env.TELEGRAM_BOT_TOKEN);
