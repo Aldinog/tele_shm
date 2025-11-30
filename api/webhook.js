@@ -1,31 +1,23 @@
-import TelegramBot from "node-telegram-bot-api";
+import { Telegraf } from 'telegraf';
 
-const token = process.env.BOT_TOKEN;
-const bot = new TelegramBot(token, { webHook: true });
+const bot = new Telegraf(process.env.TELEGRAM_BOT_TOKEN);
 
-// Set Webhook ke Vercel
-bot.setWebHook(`${process.env.VERCEL_URL}/api/webhook`);
-
-// Listener pesan masuk
-bot.on("message", async (msg) => {
-  const chatId = msg.chat.id;
-  const text = msg.text || "";
-
-  console.log(`📩 Message from ${chatId}: ${text}`);
-
-  if (text === "/start") {
-    await bot.sendMessage(chatId, "🤖 Bot aktif dan siap digunakan!\n\nSilakan kirim perintah.");
-  } else {
-    await bot.sendMessage(chatId, "Bot menerima pesan kamu, fitur lanjut sedang dikembangkan ✨");
-  }
+// Handler jika ada pesan masuk
+bot.on('text', async (ctx) => {
+  await ctx.reply('Bot sudah aktif dan menerima pesan!');
 });
 
-// Handler Serverless (WAJIB untuk Vercel)
-export default function handler(req, res) {
-  if (req.method === "POST") {
-    bot.processUpdate(req.body);
-    res.status(200).send("OK");
+// FIX agar Telegraf bisa jalan di Vercel (tanpa polling)
+export default async function handler(req, res) {
+  if (req.method === 'POST') {
+    try {
+      await bot.handleUpdate(req.body); // Proses update dari Telegram
+      res.status(200).send('OK');
+    } catch (error) {
+      console.error('Error handling update:', error);
+      res.status(500).send('Error');
+    }
   } else {
-    res.status(200).send("🚀 Bot webhook aktif!");
+    res.status(200).send('Webhook aktif!');
   }
 }
