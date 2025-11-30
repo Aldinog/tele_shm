@@ -4,16 +4,20 @@ const moment = require('moment-timezone');
 
 const getStockData = async (symbol) => {
   try {
-    const response = await axios.get(`https://api.goapi.io/stock/price/${symbol}`, {
-      headers: { "X-API-KEY": process.env.GOAPI_API_KEY },
+    const response = await axios.get("https://api.goapi.io/stock/idx/prices", {
+      params: {
+        symbols: symbol.toUpperCase(),
+        api_key: process.env.GOAPI_API_KEY
+      }
     });
 
-    return response.data?.data || null;
+    return response.data?.data?.[0] || null;
   } catch (error) {
     console.error("Error fetch stock data:", error?.response?.data || error.message);
     return null;
   }
 };
+
 
 const sendTelegramMessage = async (chatId, text) => {
   try {
@@ -39,7 +43,7 @@ const writeJSON = (filepath, data) => {
   fs.writeFileSync(filepath, JSON.stringify(data, null, 2));
 };
 
-const GOAPI_URL = 'https://api.goapi.io/saham/idx/harga';
+const GOAPI_URL = 'https://api.goapi.io/stock/idx/prices';
 
 const fetchHarga = async (emiten) => {
   try {
