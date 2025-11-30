@@ -11,7 +11,7 @@ const getStockData = async (symbol) => {
       }
     });
 
-    return response.data?.data?.[0] || null;
+    return response.data?.data?.results?.[0] || null;
   } catch (error) {
     console.error("Error fetch stock data:", error?.response?.data || error.message);
     return null;
@@ -49,25 +49,27 @@ const fetchHarga = async (emiten) => {
   try {
     const res = await axios.get(GOAPI_URL, {
       params: {
-        simbol: emiten,
+        symbols: emiten.toUpperCase(), // WAJIB pakai "symbols", bukan "simbol"
         api_key: process.env.GOAPI_API_KEY
       }
     });
 
-    const d = res.data?.data;
+    const d = res.data?.data?.results?.[0];
     if (!d) return `❌ Data untuk ${emiten} tidak ditemukan.`;
 
-    return `📊 *${emiten.toUpperCase()}*
-💰 Harga: *${d.last}*
+    return `📊 *${d.company.name} (${d.symbol})*
+💰 Close: *${d.close}*
 📈 High: ${d.high}
 📉 Low: ${d.low}
-📊 Volume: ${d.volume}
+📊 Volume: ${d.volume.toLocaleString()}
+📬 Change: ${d.change} (${d.change_pct.toFixed(2)}%)
 🕒 Update: ${moment().tz("Asia/Jakarta").format("DD/MM HH:mm")}`;
   } catch (err) {
     console.error("API Error:", err.response?.data || err.message);
-    return `❌ Gagal ambil data untuk ${emiten}`;
+    return `❌ Gagal ambil data untuk ${emiten}.`;
   }
 };
+
 
 const sendMessage = async (chatId, text) => {
   await axios.post(`https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
