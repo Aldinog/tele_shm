@@ -1,6 +1,6 @@
 const axios = require('axios');
 
-export async function getHargaSaham(kode) {
+async function getHargaSaham(kode) {
   try {
     const url = `${process.env.GOAPI_URL}/${kode}?api_key=${process.env.GOAPI_KEY}`;
     const response = await axios.get(url);
@@ -14,3 +14,5 @@ export async function getHargaSaham(kode) {
     return null;
   }
 }
+
+module.exports = { getHargaSaham };
