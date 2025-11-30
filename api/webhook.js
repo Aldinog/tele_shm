@@ -1,7 +1,8 @@
 const { Telegraf } = require('telegraf');
 const moment = require('moment-timezone');
 const { isAllowedGroup } = require('../utils/groupControl');
-const { getStockData } = require('../utils/harga.js'); // pastikan sudah diperbarui
+const { fetchHarga, getStockData } = require('../api/utils.js');
+
 
 // Inisialisasi bot
 const bot = new Telegraf(process.env.TELEGRAM_BOT_TOKEN);
