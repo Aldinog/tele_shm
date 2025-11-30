@@ -39,21 +39,28 @@ const writeJSON = (filepath, data) => {
   fs.writeFileSync(filepath, JSON.stringify(data, null, 2));
 };
 
-const GOAPI_URL = "https://api.goapi.io/api/v1/stock/idx/";
+const GOAPI_URL = 'https://api.goapi.io/saham/idx/harga';
 
 const fetchHarga = async (emiten) => {
   try {
-    const res = await axios.get(`${GOAPI_URL}${emiten}`, {
-      params: { apiKey: process.env.GOAPI_API_KEY }
+    const res = await axios.get(GOAPI_URL, {
+      params: {
+        simbol: emiten,
+        api_key: process.env.GOAPI_API_KEY
+      }
     });
-    const d = res.data.data;
+
+    const d = res.data?.data;
+    if (!d) return `❌ Data untuk ${emiten} tidak ditemukan.`;
+
     return `📊 *${emiten.toUpperCase()}*
-Harga: *${d.last}*
-High: ${d.high}
-Low: ${d.low}
-Volume: ${d.volume}
-Update: ${moment().tz("Asia/Jakarta").format("DD/MM HH:mm")}`;
+💰 Harga: *${d.last}*
+📈 High: ${d.high}
+📉 Low: ${d.low}
+📊 Volume: ${d.volume}
+🕒 Update: ${moment().tz("Asia/Jakarta").format("DD/MM HH:mm")}`;
   } catch (err) {
+    console.error("API Error:", err.response?.data || err.message);
     return `❌ Gagal ambil data untuk ${emiten}`;
   }
 };
