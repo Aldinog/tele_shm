@@ -26,9 +26,13 @@ bot.command('cek', (ctx) => {
   ctx.reply('🟢 Bot aktif dan berjalan normal.');
 });
 
-bot.onText(/\/harga (.+)/, async (msg, match) => {
-  const chatId = msg.chat.id;
-  const symbol = match[1];
+bot.command("harga", async (ctx) => {
+  const input = ctx.message.text.split(" ");
+  const kode = input[1]?.toUpperCase();
+
+  if (!kode) {
+    return ctx.reply("⚠ Format salah.\nGunakan: `/harga BBCA`", { parse_mode: "Markdown" });
+  }
 
   const stockData = await getStockData(symbol);
 
@@ -47,7 +51,6 @@ bot.onText(/\/harga (.+)/, async (msg, match) => {
 
   bot.sendMessage(chatId, responseMessage, { parse_mode: "Markdown" });
 });
-
 
 
 // Webhook Handler
