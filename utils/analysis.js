@@ -29,111 +29,145 @@ async function getHistorical(symbol) {
 // =========================
 // Analisa otomatis
 // =========================
+// utils/analysis.js (hanya fungsi analyzeStock di-update
+
+function safeNum(v, digits = 2) {
+  if (v === null || v === undefined || Number.isNaN(v)) return null;
+  return Number(Number(v).toFixed(digits));
+}
+function fmt(v) {
+  if (v === null || v === undefined) return "-";
+  if (Number.isInteger(v)) return v.toLocaleString('id-ID');
+  return Number(v).toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+async function getHistorical(symbol) {
+  const to = new Date().toISOString().split("T")[0];
+  const fromDate = new Date();
+  fromDate.setDate(fromDate.getDate() - 80); // ambil lebih panjang untuk berjaga2
+  const from = fromDate.toISOString().split("T")[0];
+
+  try {
+    const url = `https://api.goapi.io/stock/idx/${symbol}/historical?from=${from}&to=${to}`;
+    const { data } = await axios.get(url, {
+      params: { api_key: process.env.GOAPI_API_KEY },
+      timeout: 10000
+    });
+    return data?.data?.results || [];
+  } catch (err) {
+    console.error("Error historical:", err.response?.data || err.message);
+    return null;
+  }
+}
+
 async function analyzeStock(symbol) {
   const candles = await getHistorical(symbol);
-
-  if (!candles || candles.length < 30) {
-    return { error: "Data tidak cukup untuk analisa." };
+  if (!candles || candles.length < 20) {
+    return { error: "Data tidak cukup untuk analisa (butuh minimal ~20 candle)." };
   }
 
-  // urutkan ascending (paling lama → terbaru)
-  const c = candles.reverse();
+  // API sering return newest first atau oldest first — pastikan ascending (oldest..newest)
+  let c = [...candles];
+  // if first date is newer than last, reverse to oldest-first
+  if (new Date(c[0].date) > new Date(c[c.length - 1].date)) c = c.reverse();
 
-  const close = c.map(x => x.close);
-  const high = c.map(x => x.high);
-  const low  = c.map(x => x.low);
+  const close = c.map(x => Number(x.close));
+  const high = c.map(x => Number(x.high));
+  const low  = c.map(x => Number(x.low));
 
-  // ======================
-  // Hitung INDICATORS
-  // ======================
-  const ma5  = SMA(close, 5)?.slice(-1)[0];
-  const ma20 = SMA(close, 20)?.slice(-1)[0];
-  const ma50 = SMA(close, 50)?.slice(-1)[0];
+  // Hitung indikator (beberapa fungsi mengembalikan arrays)
+  const ma5Arr  = SMA(close, 5);
+  const ma20Arr = SMA(close, 20);
+  const ma50Arr = SMA(close, 50);
 
-  const rsi14 = RSI(close, 14)?.slice(-1)[0];
+  const ma5  = ma5Arr && ma5Arr.length ? safeNum(ma5Arr[ma5Arr.length - 1], 2) : null;
+  const ma20 = ma20Arr && ma20Arr.length ? safeNum(ma20Arr[ma20Arr.length - 1], 2) : null;
+  const ma50 = ma50Arr && ma50Arr.length ? safeNum(ma50Arr[ma50Arr.length - 1], 2) : null;
 
-  const macd = MACD(close, 12, 26, 9);
-  const macdLine = macd?.macd?.slice(-1)[0];
-  const signalLine = macd?.signal?.slice(-1)[0];
-  const histo = macd?.histogram?.slice(-1)[0];
+  const rsiArr = RSI(close, 14);
+  const rsi14 = rsiArr && rsiArr.length ? safeNum(rsiArr[rsiArr.length - 1], 2) : null;
 
-  const stoch = Stochastic(high, low, close, 14, 3, 3);
-  const stochK = stoch?.k?.slice(-1)[0];
-  const stochD = stoch?.d?.slice(-1)[0];
+  const macdObj = MACD(close, 12, 26, 9);
+  const macdLineLast = macdObj && macdObj.macd && macdObj.macd.length ? safeNum(macdObj.macd[macdObj.macd.length - 1], 4) : null;
+  const macdSignalLast = macdObj && macdObj.signal && macdObj.signal.length ? safeNum(macdObj.signal[macdObj.signal.length - 1], 4) : null;
+  const macdHistoLast = macdObj && macdObj.histogram && macdObj.histogram.length ? safeNum(macdObj.histogram[macdObj.histogram.length - 1], 4) : null;
 
-  const lastClose = close[close.length - 1];
+  const stochObj = Stochastic(high, low, close, 14, 3, 3);
+  const stochK = stochObj && stochObj.k && stochObj.k.length ? safeNum(stochObj.k[stochObj.k.length - 1], 2) : null;
+  const stochD = stochObj && stochObj.d && stochObj.d.length ? safeNum(stochObj.d[stochObj.d.length - 1], 2) : null;
 
-  // ======================
-  // Interpretasi
-  // ======================
+  const lastClose = safeNum(close[close.length - 1], 0);
 
-  let trend = "";
-  if (ma5 > ma20 && ma20 > ma50) trend = "Uptrend kuat";
-  else if (ma5 > ma20) trend = "Mulai uptrend (awal reversal)";
-  else if (ma5 < ma20 && ma20 < ma50) trend = "Downtrend";
-  else trend = "Sideways";
+  // Interpretasi trend / momentum (fallback jika indikator null)
+  let trend = "Sideways";
+  if (ma5 !== null && ma20 !== null && ma50 !== null) {
+    if (ma5 > ma20 && ma20 > ma50) trend = "Uptrend kuat";
+    else if (ma5 > ma20) trend = "Mulai uptrend (awal reversal)";
+    else if (ma5 < ma20 && ma20 < ma50) trend = "Downtrend";
+  } else if (ma5 !== null && ma20 !== null) {
+    trend = ma5 > ma20 ? "Mulai uptrend (awal reversal)" : "Sideways";
+  }
 
-  let momentum = "";
-  if (rsi14 > 70) momentum = "Overbought (wajib hati-hati)";
-  else if (rsi14 < 30) momentum = "Oversold (peluang reversal)";
-  else momentum = "Normal";
+  let momentum = "Normal";
+  if (rsi14 !== null) {
+    if (rsi14 > 70) momentum = "Overbought (wajib hati-hati)";
+    else if (rsi14 < 30) momentum = "Oversold (peluang reversal)";
+  }
 
-  let macdSignal = "";
-  if (macdLine > signalLine && histo > 0) macdSignal = "Bullish";
-  else if (macdLine < signalLine && histo < 0) macdSignal = "Bearish";
-  else macdSignal = "Neutral";
+  let macdSignal = "Neutral";
+  if (macdLineLast !== null && macdSignalLast !== null && macdHistoLast !== null) {
+    macdSignal = macdLineLast > macdSignalLast && macdHistoLast > 0 ? "Bullish" :
+                 macdLineLast < macdSignalLast && macdHistoLast < 0 ? "Bearish" : "Neutral";
+  }
 
-  let stochSignal = "";
-  if (stochK > 80) stochSignal = "Overbought";
-  else if (stochK < 20) stochSignal = "Oversold";
-  else stochSignal = "Normal";
+  let stochSignal = "Normal";
+  if (stochK !== null) {
+    stochSignal = stochK > 80 ? "Overbought" : stochK < 20 ? "Oversold" : "Normal";
+  }
 
-  // ======================
-  // Zona Buy / SL / TP
-  // ======================
-  const buyZone = ((ma20 + ma50) / 2).toFixed(0);
-  const stopLoss = (lastClose * 0.95).toFixed(0);
+  // Zona Buy / SL / TP: gunakan fallback jika ma20/ma50 null
+  const zBase1 = (ma20 !== null ? ma20 : lastClose);
+  const zBase2 = (ma50 !== null ? ma50 : lastClose);
+  const buyZone = Math.round(((zBase1 + zBase2) / 2));
+  const stopLoss = Math.round(lastClose * 0.95);
+  const tp1 = Math.round(lastClose * 1.02);
+  const tp2 = Math.round(lastClose * 1.04);
+  const tp3 = Math.round(lastClose * 1.06);
 
-  const tp1 = (lastClose * 1.02).toFixed(0);
-  const tp2 = (lastClose * 1.04).toFixed(0);
-  const tp3 = (lastClose * 1.06).toFixed(0);
-
-  // ======================
-  // Format Output Telegram
-  // ======================
+  // Format message (gunakan fmt helper)
   const output = `
 📊 *Analisa ${symbol} (Intraday)*
 
-💹 *Harga terakhir:* ${lastClose}
+💹 *Harga terakhir:* ${fmt(lastClose)}
 
 📈 *Moving Average*
-- MA5: ${ma5?.toFixed(2)}
-- MA20: ${ma20?.toFixed(2)}
-- MA50: ${ma50?.toFixed(2)}
+- MA5: ${fmt(ma5)}
+- MA20: ${fmt(ma20)}
+- MA50: ${fmt(ma50)}
 
 🔍 *Trend:* ${trend}
 
 📊 *Momentum*
-- RSI14: ${rsi14?.toFixed(2)} → ${momentum}
+- RSI14: ${fmt(rsi14)} → ${momentum}
 
 📉 *MACD*
-- MACD: ${macdLine?.toFixed(2)}
-- Signal: ${signalLine?.toFixed(2)}
-- Histogram: ${histo?.toFixed(2)}
+- MACD: ${fmt(macdLineLast)}
+- Signal: ${fmt(macdSignalLast)}
+- Histogram: ${fmt(macdHistoLast)}
 → *${macdSignal}*
 
 🎯 *Stochastic*
-- %K: ${stochK?.toFixed(2)}
-- %D: ${stochD?.toFixed(2)}
+- %K: ${fmt(stochK)}
+- %D: ${fmt(stochD)}
 → *${stochSignal}*
 
 ======================
-🎯 *Zona BUY:* ${buyZone}
-🛑 *Stop Loss:* ${stopLoss}
+🎯 *Zona BUY:* ${fmt(buyZone)}
+🛑 *Stop Loss:* ${fmt(stopLoss)}
 🎯 *Target Profit:*
-- TP1: ${tp1}
-- TP2: ${tp2}
-- TP3: ${tp3}
+- TP1: ${fmt(tp1)}
+- TP2: ${fmt(tp2)}
+- TP3: ${fmt(tp3)}
 ======================
 
 ⚠ *Disclaimer:* Bot hanya memberi pandangan teknikal.  
