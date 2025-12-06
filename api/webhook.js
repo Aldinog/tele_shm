@@ -12,47 +12,34 @@ bot.use((ctx, next) => {
   
   if (!isAllowedGroup(chatId)) {
     console.log(`❌ Pesan dari grup tidak diizinkan: ${chatId}`);
-    return ctx.reply('🚫 Grup ini tidak diizinkan menggunakan bot ini.', {
-      parse_mode: "HTML"
-    });
+    return ctx.reply('🚫 Grup ini tidak diizinkan menggunakan bot ini.');
   }
   return next();
 });
 
-bot.start((ctx) =>
-  ctx.reply('🤖 Bot aktif', { parse_mode: "HTML" })
-);
-
-bot.help((ctx) =>
-  ctx.reply('📌 List command: <b>/start</b> <b>/help</b> <b>/cek</b> <b>/harga &lt;EMITEN&gt;</b>', {
-    parse_mode: "HTML"
-  })
-);
+bot.start((ctx) => ctx.reply('🤖 Bot aktif'));
+bot.help((ctx) => ctx.reply('📌 List command: /start /help /cek /harga <EMITEN>'));
 
 bot.command('cek', (ctx) => {
-  ctx.reply('🟢 Bot aktif dan berjalan normal.', { parse_mode: "HTML" });
+  ctx.reply('🟢 Bot aktif dan berjalan normal.');
 });
 
-// =============================
-// COMMAND: /analisa
-// =============================
+// MAIN COMMAND: /analisa
+// =========================
 bot.command("analisa", async (ctx) => {
   const text = ctx.message.text.split(" ");
   const symbol = text[1]?.toUpperCase();
 
   if (!symbol) {
-    return ctx.reply(
-      "⚠ Cara pakai:\n<b>/analisa &lt;SYMBOL&gt;</b>\n\nContoh: <b>/analisa BBCA</b>",
-      { parse_mode: "HTML" }
-    );
+    return ctx.reply("⚠ Cara pakai:\n/analisa <SYMBOL>\n\nContoh: /analisa BBCA");
   }
 
-  await ctx.reply("⏳ Wait..", { parse_mode: "HTML" });
+  await ctx.reply("⏳ Wait..");
 
   const result = await analyzeStock(symbol);
 
   if (result.error) {
-    return ctx.reply(`❌ ${result.error}`, { parse_mode: "HTML" });
+    return ctx.reply(`❌ ${result.error}`);
   }
 
   try {
@@ -62,52 +49,33 @@ bot.command("analisa", async (ctx) => {
   }
 });
 
-// =============================
-// COMMAND: /harga
-// =============================
+// Command harga saham
 bot.command("harga", async (ctx) => {
   const input = ctx.message.text.split(" ");
   const kode = input[1]?.toUpperCase();
 
   if (!kode) {
-    return ctx.reply(
-      `⚠ Format salah.\nGunakan: <code>/harga WIFI</code>`,
-      { parse_mode: "HTML" }
-    );
+    return ctx.reply("⚠ Format salah.\nGunakan: `/harga WIFI`", { parse_mode: "MarkdownV2" });
   }
 
   try {
     const msg = await fetchHarga(kode);
-
-    // AMAN: harus pastikan msg TIDAK mengandung <br>
-    const safeMsg = msg.replace(/<br\s*\/?>/gi, "\n");
-
-    return ctx.reply(safeMsg, { parse_mode: "HTML" });
-
+    return ctx.reply(msg, { parse_mode: "MarkdownV2" });
   } catch (err) {
     console.error("Error saat mengambil harga saham:", err);
-
-    return ctx.reply(
-      `❌ Terjadi kesalahan saat mengambil data untuk <b>${kode}</b>.`,
-      { parse_mode: "HTML" }
-    );
+    return ctx.reply(`❌ Terjadi kesalahan saat mengambil data untuk *${kode}*.`);
   }
 });
 
-
-// =============================
-// COMMAND: /getid
-// =============================
+// Command getid
 bot.command('getid', async (ctx) => {
   await ctx.reply(
-    `🆔 Chat ID: <code>${ctx.chat.id}</code><br>📍 Tipe: <b>${ctx.chat.type}</b>`,
+    `🆔 Chat ID: <code>${ctx.chat.id}</code>\n📍 Tipe: <b>${ctx.chat.type}</b>`,
     { parse_mode: 'HTML' }
   );
 });
 
-// =============================
-// WEBHOOK HANDLER
-// =============================
+// Webhook Handler
 module.exports = async (req, res) => {
   if (req.method === 'POST') {
     try {

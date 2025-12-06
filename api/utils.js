@@ -33,10 +33,10 @@ const fetchHarga = async (emiten) => {
 
     const updateTime = moment().tz("Asia/Jakarta").format("DD/MM HH:mm");
 
-    return `📊 **${data.company.name} (${data.symbol})**
-💰 Close: ${data.close}
+    return `📊 *${data.company.name} (${data.symbol})*
+💰 *Close:* ${data.close}
 📈 High: ${data.high}
-📉 Low: ${data.low} 
+📉 Low: ${data.low}
 📊 Volume: ${data.volume.toLocaleString()}
 🕒 Update: ${updateTime}`;
   } catch (err) {
