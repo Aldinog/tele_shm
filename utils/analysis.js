@@ -137,13 +137,13 @@ async function analyzeStock(symbol) {
 
     // Jika SL tidak logis (lebih tinggi dari BUY), paksa minimal 2% di bawah BUY
     if (stopLoss >= buyZone) {
-        stopLoss = buyZone - Math.round(buyZone * 0.02);
+        stopLoss = buyZone - Math.round(buyZone * 0.97);
     }
 
     // Take Profit dihitung dari BUY zone
-    const tp1 = Math.round(buyZone * 1.02);
-    const tp2 = Math.round(buyZone * 1.04);
-    const tp3 = Math.round(buyZone * 1.06);
+    const tp1 = Math.round(buyZone * 1.05);
+    const tp2 = Math.round(buyZone * 1.03);
+    const tp3 = Math.round(buyZone * 1.03);
 
 
     // Format message (gunakan fmt helper)
