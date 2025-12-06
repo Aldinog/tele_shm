@@ -1,6 +1,6 @@
 // utils/analysis.js
 
-const { SMA, RSI, MACD, Stochastic } = require("../utils/indicator.js");
+const { SMA, RSI, MACD, Stochastic } = require("../utils/indikator.js");
 const axios = require("axios");
 
 // ============================
