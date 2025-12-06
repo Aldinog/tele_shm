@@ -24,7 +24,6 @@ bot.command('cek', (ctx) => {
   ctx.reply('🟢 Bot aktif dan berjalan normal.');
 });
 
-
 // MAIN COMMAND: /analisa
 // =========================
 bot.command("analisa", async (ctx) => {
