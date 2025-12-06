@@ -2,6 +2,7 @@
 
 const { SMA, RSI, MACD, Stochastic } = require("../utils/indikator.js");
 const axios = require("axios");
+const { fetchHarga } = require('../api/utils.js');
 
 // ============================
 // Ambil histori candle 50 hari
@@ -173,17 +174,8 @@ async function analyzeStock(symbol) {
 - %D: ${fmt(stochD)}
 → *${stochSignal}*
 
-======================
-🎯 *Zona BUY:* ${fmt(buyZone)}
-🛑 *Stop Loss:* ${fmt(stopLoss)}
-🎯 *Target Profit:*
-- TP1: ${fmt(tp1)}
-- TP2: ${fmt(tp2)}
-- TP3: ${fmt(tp3)}
-======================
 
-⚠ *Disclaimer:* Bot hanya memberi pandangan teknikal.  
-WAJIB analisa manual sebelum entry.
+(AI BOT Beta V0.1)
   `.trim();
 
     return { text: output };
