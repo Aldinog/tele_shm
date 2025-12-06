@@ -29,7 +29,7 @@ const getStockData = async (symbol) => {
 const fetchHarga = async (emiten) => {
   try {
     const data = await getStockData(emiten);
-    if (!data) return `❌ Data untuk ${emiten.toUpperCase()} tidak ditemukan.`;
+    if (!data) return `❌ Data untuk ${emiten.toUpperCase()} tidak ditemukan / limit harian.`;
 
     const updateTime = moment().tz("Asia/Jakarta").format("DD/MM HH:mm");
 
