@@ -34,7 +34,7 @@ bot.command("analisa", async (ctx) => {
     return ctx.reply("⚠ Cara pakai:\n/analisa <SYMBOL>\n\nContoh: /analisa BBCA");
   }
 
-  await ctx.reply("⏳ Mengambil data & menghitung indikator...");
+  await ctx.reply("⏳ Wait..");
 
   const result = await analyzeStock(symbol);
 
