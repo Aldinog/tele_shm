@@ -2,7 +2,6 @@
 
 const { SMA, RSI, MACD, Stochastic } = require("../utils/indikator.js");
 const axios = require("axios");
-const { fetchHarga } = require('../api/utils.js');
 
 // ============================
 // Ambil histori candle 50 hari
@@ -175,7 +174,7 @@ async function analyzeStock(symbol) {
 → *${stochSignal}*
 
 
-(AI BOT Beta V0.1)
+
   `.trim();
 
     return { text: output };

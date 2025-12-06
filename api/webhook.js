@@ -48,7 +48,6 @@ bot.command("analisa", async (ctx) => {
   } catch (e) {
     await ctx.reply(result.text.replace(/[*_]/g, ""), { parse_mode: "Markdown" });
   }
-  
 });
 
 // Command harga saham
