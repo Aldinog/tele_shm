@@ -27,16 +27,17 @@ bot.command('cek', (ctx) => {
 });
 
 //comand limit -----------------------------------
-if (text === "/limit") {
-      const remaining = await getRemainingLimit();
+bot.command("limit", async (ctx) => {
+  const remaining = await getRemainingLimit();
 
-      const message = `📊 *Sisa Limit Harian GoAPI*\n\n` +
-        `- Sisa limit: *${remaining}* dari 30\n` +
-        `🔄 Reset otomatis jam 00:00 WIB`;
+  const message =
+    `📊 *Sisa Limit Harian GoAPI*\n\n` +
+    `- Sisa limit tersisa: *${remaining}* dari 30\n` +
+    `🔄 Reset otomatis setiap jam 00:00 WIB`;
 
-      await sendTelegram(chatId, message);
-      return res.sendStatus(200);
-    }
+  return ctx.reply(message, { parse_mode: "Markdown" });
+});
+
 
 // MAIN COMMAND: /analisa
 // =========================
