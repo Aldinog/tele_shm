@@ -3,7 +3,7 @@ const moment = require('moment-timezone');
 const { isAllowedGroup } = require('../utils/groupControl.js');
 const { fetchHarga } = require('../api/utils.js');
 const { analyzeStock } = require("../utils/analysis.js");
-const { incrementLimit, getRemainingLimit } = require("../utils/limit.js");
+const { getLimitStatus } = require("../utils/limit.js");
 
 
 const bot = new Telegraf(process.env.TELEGRAM_BOT_TOKEN);
@@ -28,7 +28,7 @@ bot.command('cek', (ctx) => {
 
 //comand limit -----------------------------------
 bot.command("limit", async (ctx) => {
-  const remaining = await getRemainingLimit();
+  const remaining = await getLimitStatus();
 
   const message =
     `📊 *Sisa Limit Harian GoAPI*\n\n` +
