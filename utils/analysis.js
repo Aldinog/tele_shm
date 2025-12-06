@@ -2,30 +2,6 @@
 
 const { SMA, RSI, MACD, Stochastic } = require("../utils/indikator.js");
 const axios = require("axios");
-const fs = require('fs');
-const moment = require('moment-timezone');
-
-
-
-/**
- * Mengambil data saham berdasarkan kode (symbol)
- */
-const getStockData = async (symbol) => {
-  try {
-    const response = await axios.get(GOAPI_URL, {
-      params: {
-        symbols: symbol.toUpperCase(), // WAJIB pakai "symbols"
-        api_key: process.env.GOAPI_API_KEY
-      }
-    });
-
-    return response.data?.data?.results?.[0] || null;
-  } catch (error) {
-    console.error("Error fetch stock data:", error?.response?.data || error.message);
-    return null;
-  }
-};
-
 
 // ============================
 // Ambil histori candle 50 hari
@@ -197,12 +173,6 @@ async function analyzeStock(symbol) {
 - %D: ${fmt(stochD)}
 → *${stochSignal}*
 
-
-💰 *Close:* ${data.close}
-📈 High: ${data.high}
-📉 Low: ${data.low} 
-📊 Volume: ${data.volume.toLocaleString()}
-🕒 Update: ${updateTime}
   `.trim();
 
     return { text: output };
