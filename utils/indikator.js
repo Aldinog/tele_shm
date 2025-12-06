@@ -1,116 +1,125 @@
 // utils/indicators.js
-const moment = require('moment');
 
-function simpleMA(values, period) {
-  if (!Array.isArray(values) || values.length < period) return null;
-  const res = [];
-  for (let i = 0; i <= values.length - period; i++) {
-    const slice = values.slice(i, i + period);
-    const avg = slice.reduce((s, v) => s + v, 0) / period;
-    res.push(avg);
+// =========================
+// Moving Average (Simple MA)
+// =========================
+function SMA(values, period) {
+  if (!values || values.length < period) return null;
+
+  const result = [];
+  for (let i = period - 1; i < values.length; i++) {
+    const slice = values.slice(i - period + 1, i + 1);
+    const sum = slice.reduce((a, b) => a + b, 0);
+    result.push(sum / period);
   }
-  return res;
+  return result;
 }
 
-function ema(values, period) {
-  if (!Array.isArray(values) || values.length < period) return null;
-  const k = 2 / (period + 1);
-  const out = [];
-  let prevSMA = values.slice(0, period).reduce((s, v) => s + v, 0) / period;
-  out.push(prevSMA);
-  for (let i = period; i < values.length; i++) {
-    const emaVal = values[i] * k + out[out.length - 1] * (1 - k);
-    out.push(emaVal);
-  }
-  return out;
-}
+// =========================
+// RSI (Relative Strength Index)
+// =========================
+function RSI(values, period = 14) {
+  if (!values || values.length < period + 1) return null;
 
-function rsi(values, period = 14) {
-  if (!Array.isArray(values) || values.length < period + 1) return null;
-  const gains = [];
-  const losses = [];
-  for (let i = 1; i < values.length; i++) {
+  let gains = 0;
+  let losses = 0;
+
+  for (let i = 1; i <= period; i++) {
     const diff = values[i] - values[i - 1];
-    gains.push(Math.max(diff, 0));
-    losses.push(Math.max(-diff, 0));
+    if (diff >= 0) gains += diff;
+    else losses -= diff;
   }
-  let avgGain = gains.slice(0, period).reduce((s, v) => s + v, 0) / period;
-  let avgLoss = losses.slice(0, period).reduce((s, v) => s + v, 0) / period;
-  let lastRsi = 100 - (100 / (1 + (avgGain / (avgLoss || 1e-8))));
 
-  for (let i = period; i < gains.length; i++) {
-    avgGain = (avgGain * (period - 1) + gains[i]) / period;
-    avgLoss = (avgLoss * (period - 1) + losses[i]) / period;
-    const rs = avgGain / (avgLoss || 1e-8);
-    lastRsi = 100 - (100 / (1 + rs));
+  gains /= period;
+  losses /= period;
+
+  const rsi = [];
+
+  for (let i = period + 1; i < values.length; i++) {
+    const diff = values[i] - values[i - 1];
+    let gain = 0, loss = 0;
+
+    if (diff >= 0) gain = diff;
+    else loss = -diff;
+
+    gains = (gains * (period - 1) + gain) / period;
+    losses = (losses * (period - 1) + loss) / period;
+
+    const rs = losses === 0 ? 100 : gains / losses;
+    rsi.push(100 - 100 / (1 + rs));
   }
-  return Number(lastRsi.toFixed(2));
+
+  return rsi;
 }
 
-function macd(values, fast = 12, slow = 26, signal = 9) {
-  if (!Array.isArray(values) || values.length < slow + signal) return null;
-  const emaFast = ema(values, fast); // length = values.length - fast +1
-  const emaSlow = ema(values, slow); // length = values.length - slow +1
-  const diff = emaFast.length - emaSlow.length;
-  const macdLine = [];
-  for (let i = 0; i < emaSlow.length; i++) {
-    macdLine.push(emaFast[i + diff] - emaSlow[i]);
+// =========================
+// MACD (12, 26, 9)
+// =========================
+function EMA(values, period) {
+  const k = 2 / (period + 1);
+  let ema = values[0];
+
+  const result = [ema];
+  for (let i = 1; i < values.length; i++) {
+    ema = values[i] * k + ema * (1 - k);
+    result.push(ema);
   }
-  const signalLineArr = ema(macdLine, signal);
-  const signalLine = signalLineArr ? signalLineArr[signal - 1] : null;
-  const macdLast = macdLine[macdLine.length - 1];
+  return result;
+}
+
+function MACD(values, fast = 12, slow = 26, signal = 9) {
+  if (!values || values.length < slow) return null;
+
+  const emaFast = EMA(values, fast);
+  const emaSlow = EMA(values, slow);
+
+  const macdLine = emaFast.map((v, i) => v - emaSlow[i]);
+
+  const signalLine = EMA(macdLine.slice(slow - 1), signal);
+  const histogram = macdLine.slice(slow - 1).map((v, i) => v - signalLine[i]);
+
   return {
-    macd: Number(macdLast.toFixed(4)),
-    signal: signalLine !== null ? Number(signalLine.toFixed(4)) : null,
-    histogram: signalLine !== null ? Number((macdLast - signalLine).toFixed(4)) : null
+    macd: macdLine.slice(slow - 1),
+    signal: signalLine,
+    histogram,
   };
 }
 
-function stochastic(highs, lows, closes, kPeriod = 14, dPeriod = 3) {
-  if (!Array.isArray(closes) || closes.length < kPeriod) return null;
+// =========================
+// Stochastic Oscillator (14, 3, 3)
+// =========================
+function Stochastic(high, low, close, period = 14, smoothK = 3, smoothD = 3) {
+  if (
+    !high || !low || !close ||
+    close.length < period
+  ) return null;
+
   const kValues = [];
-  for (let i = kPeriod - 1; i < closes.length; i++) {
-    const highSlice = highs.slice(i - (kPeriod - 1), i + 1);
-    const lowSlice = lows.slice(i - (kPeriod - 1), i + 1);
-    const highestHigh = Math.max(...highSlice);
-    const lowestLow = Math.min(...lowSlice);
-    const k = ((closes[i] - lowestLow) / ((highestHigh - lowestLow) || 1e-8)) * 100;
+
+  for (let i = period - 1; i < close.length; i++) {
+    const highestHigh = Math.max(...high.slice(i - period + 1, i + 1));
+    const lowestLow = Math.min(...low.slice(i - period + 1, i + 1));
+
+    const k =
+      ((close[i] - lowestLow) / (highestHigh - lowestLow)) * 100;
+
     kValues.push(k);
   }
-  const lastKSlice = kValues.slice(-dPeriod);
-  const d = lastKSlice.reduce((s, v) => s + v, 0) / lastKSlice.length;
-  return { k: Number(kValues[kValues.length - 1].toFixed(2)), d: Number(d.toFixed(2)) };
-}
 
-function formatNumber(n) {
-  if (n === null || n === undefined) return '-';
-  if (Number.isInteger(n)) return n.toLocaleString('id-ID');
-  return Number(n).toFixed(2);
-}
+  // Smooth %K
+  const smoothedK = SMA(kValues, smoothK);
+  // Smooth %D
+  const smoothedD = SMA(smoothedK, smoothD);
 
-function calcZones(close) {
-  const buy1 = close * 0.99;
-  const buy2 = close * 0.985;
-  const sl = close * 0.97;
-  const tp1 = close * 1.01;
-  const tp2 = close * 1.025;
-  const tp3 = close * 1.04;
   return {
-    buy1: Number(buy1.toFixed(0)),
-    buy2: Number(buy2.toFixed(0)),
-    sl: Number(sl.toFixed(0)),
-    tp1: Number(tp1.toFixed(0)),
-    tp2: Number(tp2.toFixed(0)),
-    tp3: Number(tp3.toFixed(0))
+    k: smoothedK,
+    d: smoothedD,
   };
 }
 
 module.exports = {
-  simpleMA,
-  ema,
-  rsi,
-  macd,
-  stochastic,
-  formatNumber,
-  calcZones
+  SMA,
+  RSI,
+  MACD,
+  Stochastic,
 };
