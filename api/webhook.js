@@ -55,12 +55,12 @@ bot.command("harga", async (ctx) => {
   const kode = input[1]?.toUpperCase();
 
   if (!kode) {
-    return ctx.reply("⚠ Format salah.\nGunakan: `/harga WIFI`", { parse_mode: "MarkdownV2" });
+    return ctx.reply("⚠ Format salah.\nGunakan: `/harga WIFI`", { parse_mode: "HTML" });
   }
 
   try {
     const msg = await fetchHarga(kode);
-    return ctx.reply(msg, { parse_mode: "MarkdownV2" });
+    return ctx.reply(msg, { parse_mode: "HTML" });
   } catch (err) {
     console.error("Error saat mengambil harga saham:", err);
     return ctx.reply(`❌ Terjadi kesalahan saat mengambil data untuk *${kode}*.`);
