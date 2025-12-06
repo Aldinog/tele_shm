@@ -3,6 +3,8 @@ const moment = require('moment-timezone');
 const { isAllowedGroup } = require('../utils/groupControl.js');
 const { fetchHarga } = require('../api/utils.js');
 const { analyzeStock } = require("../utils/analysis.js");
+const { incrementLimit, getRemainingLimit } = require("../utils/limit.js");
+
 
 const bot = new Telegraf(process.env.TELEGRAM_BOT_TOKEN);
 
@@ -23,6 +25,18 @@ bot.help((ctx) => ctx.reply('📌 List command: /start /help /cek /harga <EMITEN
 bot.command('cek', (ctx) => {
   ctx.reply('🟢 Bot aktif dan berjalan normal.');
 });
+
+//comand limit -----------------------------------
+if (text === "/limit") {
+      const remaining = await getRemainingLimit();
+
+      const message = `📊 *Sisa Limit Harian GoAPI*\n\n` +
+        `- Sisa limit: *${remaining}* dari 30\n` +
+        `🔄 Reset otomatis jam 00:00 WIB`;
+
+      await sendTelegram(chatId, message);
+      return res.sendStatus(200);
+    }
 
 // MAIN COMMAND: /analisa
 // =========================
