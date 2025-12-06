@@ -71,7 +71,7 @@ bot.command("harga", async (ctx) => {
 
   if (!kode) {
     return ctx.reply(
-      `⚠ Format salah.<br>Gunakan: <code>/harga WIFI</code>`,
+      `⚠ Format salah.\nGunakan: <code>/harga WIFI</code>`,
       { parse_mode: "HTML" }
     );
   }
@@ -79,8 +79,10 @@ bot.command("harga", async (ctx) => {
   try {
     const msg = await fetchHarga(kode);
 
-    // Hasil fetchHarga selalu HTML-safe
-    return ctx.reply(msg, { parse_mode: "HTML" });
+    // AMAN: harus pastikan msg TIDAK mengandung <br>
+    const safeMsg = msg.replace(/<br\s*\/?>/gi, "\n");
+
+    return ctx.reply(safeMsg, { parse_mode: "HTML" });
 
   } catch (err) {
     console.error("Error saat mengambil harga saham:", err);
@@ -91,6 +93,7 @@ bot.command("harga", async (ctx) => {
     );
   }
 });
+
 
 // =============================
 // COMMAND: /getid

@@ -36,8 +36,7 @@ const fetchHarga = async (emiten) => {
     return `📊 *${data.company.name} (${data.symbol})*
 💰 *Close:* ${data.close}
 📈 High: ${data.high}
-📉 Low: ${data.low}
-🔁 Change: *${data.change} (${data.change_pct.toFixed(2)}%)*  
+📉 Low: ${data.low} 
 📊 Volume: ${data.volume.toLocaleString()}
 🕒 Update: ${updateTime}`;
   } catch (err) {
