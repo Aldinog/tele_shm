@@ -51,22 +51,22 @@ bot.command("analisa", async (ctx) => {
 });
 
 // Command harga saham
-bot.command("harga", async (ctx) => {
-  const input = ctx.message.text.split(" ");
-  const kode = input[1]?.toUpperCase();
+// bot.command("harga", async (ctx) => {
+//   const input = ctx.message.text.split(" ");
+//   const kode = input[1]?.toUpperCase();
 
-  if (!kode) {
-    return ctx.reply("⚠ Format salah.\nGunakan: `/harga WIFI`", { parse_mode: "MarkdownV2" });
-  }
+//   if (!kode) {
+//     return ctx.reply("⚠ Format salah.\nGunakan: `/harga WIFI`", { parse_mode: "MarkdownV2" });
+//   }
 
-  try {
-    const msg = await fetchHarga(kode);
-    return ctx.reply(msg, { parse_mode: "MarkdownV2" });
-  } catch (err) {
-    console.error("Error saat mengambil harga saham:", err);
-    return ctx.reply(`❌ Terjadi kesalahan saat mengambil data untuk *${kode}*.`);
-  }
-});
+//   try {
+//     const msg = await fetchHarga(kode);
+//     return ctx.reply(msg, { parse_mode: "MarkdownV2" });
+//   } catch (err) {
+//     console.error("Error saat mengambil harga saham:", err);
+//     return ctx.reply(`❌ Terjadi kesalahan saat mengambil data untuk *${kode}*.`);
+//   }
+// });
 
 // Command getid
 bot.command('getid', async (ctx) => {
